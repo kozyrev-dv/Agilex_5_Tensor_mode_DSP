@@ -1,0 +1,1 @@
+vcom -work work ../../src/ssm2603_config.vhd
