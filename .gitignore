@@ -16,7 +16,7 @@
 
 *.wlf
 /work
-tb/sim/
+tb/sim/*
 !tb/sim/*.do
 
 *.yaml
