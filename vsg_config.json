@@ -1,0 +1,149 @@
+{
+  "rule" : {
+    "global" : {
+        "indent_size" : 4
+    },
+
+    "architecture_016" : {
+        "style" : "no_blank_line"
+    },
+    "architecture_018" : {
+        "style" : "no_blank_line"
+    },
+    "architecture_200" : {
+        "style" : "require_blank_line"
+    },
+    "case_009" : {
+        "style" : "no_blank_line"
+    },
+    "case_010" : {
+        "style" : "no_blank_line"
+    },
+    "case_200" : {
+        "style" : "no_blank_line"
+    },
+    "component_016" : {
+        "style" : "no_blank_line"
+    },
+    "component_018" : {
+        "style" : "require_blank_line"
+    },
+    "constant_200" : {
+        "style" : "require_blank_line"
+    },
+    "context_023" : {
+        "style" : "no_blank_line"
+    },
+    "context_024" : {
+        "style" : "no_blank_line"
+    },
+    "context_025" : {
+        "style" : "require_blank_line"
+    },
+    "entity_016" : {
+        "style" : "no_blank_line"
+    },
+    "entity_200" : {
+        "style" : "no_blank_line"
+    },
+    "entity_201" : {
+        "style" : "no_blank_line"
+    },
+    "entity_202" : {
+        "style" : "no_blank_line"
+    },
+    "entity_203" : {
+        "style" : "require_blank_line"
+    },
+    "generate_003" : {
+        "style" : "require_blank_line"
+    },
+    "generate_004" : {
+        "style" : "require_blank_line"
+    },
+    "if_030" : {
+        "disable" : true
+    },
+    "if_031" : {
+        "disable" : true
+    },
+    "instantiation_019" : {
+        "style" : "require_blank_line"
+    },
+    "loop_statement_201" : {
+        "style" : "no_blank_line"
+    },
+    "loop_statement_202" : {
+        "style" : "no_blank_line"
+    },
+    "loop_statement_203" : {
+        "style" : "require_blank_line"
+    },
+    "package_011" : {
+        "style" : "no_blank_line"
+    },
+    "package_012" : {
+        "style" : "no_blank_line"
+    },
+    "package_body_201" : {
+        "style" : "no_blank_line"
+    },
+    "package_body_202" : {
+        "style" : "no_blank_line"
+    },
+    "package_body_203" : {
+        "style" : "require_blank_line"
+    },
+    "port_001" : {
+        "style" : "no_blank_line"
+    },
+    "port_002" : {
+        "style" : "no_blank_line"
+    },
+    "process_011" : {
+        "disable" : true
+    },
+    "process_021" : {
+        "style" : "no_blank_line"
+    },
+    "process_022" : {
+        "style" : "no_blank_line"
+    },
+    "process_023" : {
+        "style" : "no_blank_line"
+    },
+    "process_026" : {
+        "style" : "no_blank_line"
+    },
+    "process_027" : {
+        "style" : "no_blank_line"
+    },
+    "record_type_definition_200" : {
+        "style" : "no_blank_line"
+    },
+    "record_type_definition_201" : {
+        "style" : "no_blank_line"
+    },
+    "signal_200" : {
+        "style" : "require_blank_line"
+    },
+    "type_011" : {
+        "style" : "no_blank_line"
+    },
+    "type_200" : {
+        "disable" : true
+    },
+
+    "constant_004": {
+      "case": "upper"
+    },
+    "generic_007": {
+      "case": "upper"
+    },
+
+    "signal_007" : {
+      "disable" : true
+    }
+  }
+  
+}
