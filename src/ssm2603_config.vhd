@@ -5,14 +5,15 @@ library ieee;
 
 entity ssm2603_config is
     generic (
-        G_INPUT_CLK   : integer := 50_000_000;
-        G_DEVICE_ADDR : integer := 16#36#
+        G_INPUT_CLK_HZ  : integer := 50_000_000;
+        G_DEVICE_ADDR   : integer := 16#36#;
+        G_DELAY_TIME_US : integer := 1000
     );
     port (
-        clk    : in    std_logic;
-        rst_n  : in    std_logic;
-        ena_i  : in    std_logic;
-        busy_o : out   std_logic;
+        clk_i     : in    std_logic;
+        reset_n_i : in    std_logic;
+        ena_i     : in    std_logic;
+        busy_o    : out   std_logic;
 
         i2c_ena_o       : out   std_logic;
         i2c_addr_o      : out   std_logic_vector(6 downto 0);
@@ -43,19 +44,29 @@ architecture rtl of ssm2603_config is
     -- codec config FSM States
 
     type   state_type is (init, tx_addr, tx_reg, tx_data, tx_done, delay, complete);
-    signal state         : state_type                            := init;
-    signal rom_index     : integer range 0 to 7                  := 0;
-    signal delay_cnt     : integer range 0 to G_INPUT_CLK / 1000 := 0;
+    signal state         : state_type                               := init;
+    signal rom_index     : integer range 0 to 7                     := 0;
+    signal delay_cnt     : integer range 0 to G_INPUT_CLK_HZ / 1000 := 0;
     signal i2c_busy_prev : std_logic;
 begin
 
+    i2c_busy_gen : process (clk_i) is
+    begin
+        if (rising_edge(clk_i)) then
+            if (reset_n_i = '0') then
+                i2c_busy_prev <= '0';
+            else
+                i2c_busy_prev <= i2c_busy_i;
+            end if;
+        end if;
+    end process i2c_busy_gen;
     -------------------------------------------------------------------
     -- 4. I2C WRAPPER STATE MACHINE (2-Byte Transmission)
     -------------------------------------------------------------------
-    command_sender_fsm : process (clk) is
+    command_sender_fsm : process (clk_i) is
     begin
-        if rising_edge(clk) then
-            if (rst_n = '0') then
+        if rising_edge(clk_i) then
+            if (reset_n_i = '0') then
                 i2c_ena_o     <= '0';
                 state         <= init;
                 i2c_data_wr_o <= (others => '0');
@@ -64,18 +75,15 @@ begin
             elsif (ena_i = '1' and i2c_ack_error_i = '0') then
 
                 case state is
-
                     when init =>
                         i2c_ena_o <= '0';
                         state     <= tx_addr;
-
                     when tx_addr =>
                         i2c_ena_o     <= '1';
                         i2c_data_wr_o <= CONFIG_ROM(rom_index)(15 downto 8);
                         if (i2c_busy_prev = '1' and i2c_busy_i = '0') then
                             state <= tx_reg;
                         end if;
-
                     when tx_reg =>
                         if (i2c_busy_prev = '1' and i2c_busy_i = '0') then
                             i2c_data_wr_o <= CONFIG_ROM(rom_index)(7 downto 0);
@@ -84,14 +92,12 @@ begin
                             i2c_data_wr_o <= CONFIG_ROM(rom_index)(15 downto 8);
                             state         <= tx_reg;
                         end if;
-
                     when tx_data =>
                         i2c_data_wr_o <= CONFIG_ROM(rom_index)(7 downto 0);
                         if (i2c_busy_prev = '1' and i2c_busy_i = '0') then
                             i2c_ena_o <= '0';
                             state     <= tx_done;
                         end if;
-
                     when tx_done =>
                         if (i2c_busy_i = '0') then
                             if (rom_index < CONFIG_ROM'length - 1) then
@@ -101,20 +107,17 @@ begin
                                 state <= complete; -- Configuration complete
                             end if;
                         end if;
-
                     when delay =>
                         -- Brief pause between I2C configurations
-                        if (delay_cnt = G_INPUT_CLK / 1000) then
+                        if (delay_cnt = G_DELAY_TIME_US * G_INPUT_CLK_HZ / 1000000 - 1) then
                             delay_cnt <= 0;
                             state     <= tx_addr;
                         else
                             delay_cnt <= delay_cnt + 1;
                         end if;
-
                     when complete =>
                         state     <= complete;
                         i2c_ena_o <= '0';
-
                     when others =>
                         state     <= init;
                         i2c_ena_o <= '0';
@@ -123,16 +126,6 @@ begin
         end if;
     end process command_sender_fsm;
 
-    i2c_busy_gen : process (clk) is
-    begin
-        if (rising_edge(clk)) then
-            if (rst_n = '0') then
-                i2c_busy_prev <= '0';
-            else
-                i2c_busy_prev <= i2c_busy_i;
-            end if;
-        end if;
-    end process i2c_busy_gen;
     busy_o     <= '1' when (ena_i = '1') and (state /= complete) else
                   '0';
     i2c_addr_o <= std_logic_vector(to_unsigned(G_DEVICE_ADDR, i2c_addr_o'length));

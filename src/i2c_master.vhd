@@ -88,6 +88,7 @@ begin
                 scl_clk       <= '0';
             else
                 data_clk_prev <= data_clk;                      -- store previous value of data clock
+
                 if (count = DIVIDER * 4 - 1) then               -- end of timing cycle
                     count := 0;                                 -- reset timer
                 elsif (stretch = '0') then                      -- clock stretching from slave not detected
@@ -95,15 +96,12 @@ begin
                 end if;
 
                 case count is                                   --  generates data_clk 90 deg. off the scl_clk
-
                     when 0 to DIVIDER - 1 =>                    -- first 1/4 cycle of clocking
                         scl_clk  <= '0';
                         data_clk <= '0';
-
                     when DIVIDER to (DIVIDER * 2 - 1) =>        -- second 1/4 cycle of clocking
                         scl_clk  <= '0';
                         data_clk <= '1';
-
                     when DIVIDER * 2 to (DIVIDER * 3 - 1) =>    -- third 1/4 cycle of clocking
                         scl_clk <= '1';                         -- release scl
                         if (scl_io = '0') then                  -- detect if slave is stretching clock
@@ -112,7 +110,6 @@ begin
                             stretch <= '0';
                         end if;
                         data_clk <= '1';
-
                     when others =>                              -- last 1/4 cycle of clocking
                         scl_clk  <= '1';
                         data_clk <= '0';
@@ -120,7 +117,7 @@ begin
             end if;
         end if;
     end process i2c_clk_gen;
-    -- state machine and writing to sda during scl low (data_clk rising edge)
+
     fsm : process (clk_i) is
     begin
         if (rising_edge(clk_i)) then
@@ -140,7 +137,6 @@ begin
             elsif (data_clk = '1' and data_clk_prev = '0') then                  -- data clock rising edge
 
                 case state is
-
                     when fsm_ready =>                                            -- idle state
                         if (ena_i = '1') then                                    -- transaction requested
                             busy_o  <= '1';                                      -- flag busy
@@ -151,12 +147,10 @@ begin
                             busy_o <= '0';                                       -- unflag busy
                             state  <= fsm_ready;                                 -- remain idle
                         end if;
-
                     when fsm_start =>                                            -- start bit of transaction
                         busy_o  <= '1';                                          -- resume busy if continuous mode
                         sda_int <= addr_rw(bit_cnt);                             -- set first address bit to bus
                         state   <= fsm_addr;                                     -- go to command
-
                     when fsm_addr =>                                             -- address and command byte of transaction
                         if (bit_cnt = 0) then                                    -- command transmit finished
                             busy_o  <= '0';                                      -- resume busy if continuous mode
@@ -169,7 +163,6 @@ begin
                             sda_int <= addr_rw(bit_cnt - 1);                     -- write address/command bit to bus
                             state   <= fsm_addr;                                 -- continue with command
                         end if;
-
                     when fsm_slv_ack1 =>                                         -- slave acknowledge bit (command)
                         busy_o <= '1';                                           -- resume busy if continuous mode
                         if (addr_rw(0) = '0') then                               -- write command
@@ -179,7 +172,6 @@ begin
                             sda_int <= '1';                                      -- release sda from incoming data
                             state   <= fsm_read;                                 -- go to read byte
                         end if;
-
                     when fsm_write =>                                            -- write byte of transaction
                         if (bit_cnt = 0) then                                    -- write byte transmit finished
                             sda_int <= '1';                                      -- release sda for slave acknowledge
@@ -192,7 +184,6 @@ begin
                             sda_int <= data_tx(bit_cnt - 1);                     -- write next bit to bus
                             state   <= fsm_write;                                -- continue writing
                         end if;
-
                     when fsm_read =>                                             -- read byte of transaction
                         busy_o <= '1';                                           -- resume busy if continuous mode
                         if (bit_cnt = 0) then                                    -- read byte receive finished
@@ -208,7 +199,6 @@ begin
                             bit_cnt <= bit_cnt - 1;                              -- keep track of transaction bits
                             state   <= fsm_read;                                 -- continue reading
                         end if;
-
                     when fsm_slv_ack2 =>                                         -- slave acknowledge bit (write)
                         if (ena_i = '1') then                                    -- continue transaction
                             addr_rw <= addr_i & rw_i;                            -- collect requested slave address and command
@@ -225,7 +215,6 @@ begin
                             state  <= fsm_stop;                                  -- go to stop bit
                             busy_o <= '0';                                       -- continue is accepted
                         end if;
-
                     when fsm_mstr_ack =>                                         -- master acknowledge bit after a read
                         if (ena_i = '1') then                                    -- continue transaction
                             busy_o  <= '0';                                      -- continue is accepted and data received is available on bus
@@ -240,7 +229,6 @@ begin
                         else                                                     -- complete transaction
                             state <= fsm_stop;                                   -- go to stop bit
                         end if;
-
                     when fsm_stop =>                                             -- stop bit of transaction
                         busy_o <= '0';                                           -- unflag busy
                         state  <= fsm_ready;                                     -- go to idle state
@@ -249,29 +237,23 @@ begin
             elsif (data_clk = '0' and data_clk_prev = '1') then                  -- data clock falling edge
 
                 case state is
-
                     when fsm_start =>
                         if (scl_ena = '0') then                                  -- starting new transaction
                             scl_ena     <= '1';                                  -- enable scl output
                             ack_error_o <= '0';                                  -- reset acknowledge error output
                         end if;
-
                     when fsm_slv_ack1 =>                                         -- receiving slave acknowledge (command)
                         if (sda_io /= '0' or ack_error_o = '1') then             -- no-acknowledge or previous no-acknowledge
                             ack_error_o <= '1';                                  -- set error output if no-acknowledge
                         end if;
-
                     when fsm_read =>                                             -- receiving slave data
                         data_rx(bit_cnt) <= sda_io;                              -- receive current slave data bit
-
                     when fsm_slv_ack2 =>                                         -- receiving slave acknowledge (write)
                         if (sda_io /= '0' or ack_error_o = '1') then             -- no-acknowledge or previous no-acknowledge
                             ack_error_o <= '1';                                  -- set error output if no-acknowledge
                         end if;
-
                     when fsm_stop =>
                         scl_ena <= '0';                                          -- disable scl
-
                     when others =>
                         null;
                 end case;

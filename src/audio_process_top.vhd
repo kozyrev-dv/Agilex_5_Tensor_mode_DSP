@@ -5,8 +5,9 @@ library ieee;
 
 entity audio_process_top is
     generic (
-        G_INPUT_CLK : integer := 50_000_000;
-        G_AUD_CLK   : integer := 12_228_000
+        G_INPUT_CLK_HZ        : integer := 50_000_000;
+        G_AUD_CLK_HZ          : integer := 12_228_000;
+        G_AUD_CONFIG_DELAY_US : integer := 10
     );
     port (
         clk     : in    std_logic;
@@ -19,11 +20,11 @@ entity audio_process_top is
 
         -- Audio CODEC Interface (FPGA is Master)
         aud_xck     : out   std_logic;
-        aud_bclk    : out   std_logic;
+        aud_bclk    : in   std_logic;
         aud_adclrck : out   std_logic;
-        aud_adcdat  : in    std_logic;
+        aud_adcdat  : in    std_logic; -- recording data
         aud_daclrck : out   std_logic;
-        aud_dacdat  : out   std_logic
+        aud_dacdat  : out   std_logic -- playback data
     );
 end entity audio_process_top;
 
@@ -31,12 +32,13 @@ architecture rtl of audio_process_top is
 
     component ssm2603_config is
         generic (
-            G_INPUT_CLK   : integer := 50_000_000;
-            G_DEVICE_ADDR : integer := 16#36#
+            G_INPUT_CLK_HZ  : integer := 50_000_000;
+            G_DEVICE_ADDR   : integer := 16#36#;
+            G_DELAY_TIME_US : integer := 1000
         );
         port (
-            clk             : in    std_logic;
-            rst_n           : in    std_logic;
+            clk_i           : in    std_logic;
+            reset_n_i       : in    std_logic;
             ena_i           : in    std_logic;
             busy_o          : out   std_logic;
             i2c_ena_o       : out   std_logic;
@@ -112,14 +114,15 @@ begin
     -------------------------------------------------------------------
     ssm2603_config_inst : component ssm2603_config
         generic map (
-            g_input_clk   => G_INPUT_CLK,
-            g_device_addr => 16#36#
+            G_INPUT_CLK_HZ  => G_INPUT_CLK_HZ,
+            G_DEVICE_ADDR   => 16#36#,
+            G_DELAY_TIME_US => G_AUD_CONFIG_DELAY_US
         )
         port map (
-            clk    => clk,
-            rst_n  => reset_hard_n,
-            ena_i  => ena_aud_config,
-            busy_o => busy_aud_config,
+            clk_i     => clk,
+            reset_n_i => reset_hard_n,
+            ena_i     => ena_aud_config,
+            busy_o    => busy_aud_config,
 
             i2c_ena_o       => aud_config_i2c_ena,
             i2c_addr_o      => aud_config_i2c_addr,
@@ -143,7 +146,6 @@ begin
         i2c_ack_error <= '0';
 
         case state is
-
             when aud_codec_config =>
                 i2c_ena       <= aud_config_i2c_ena;
                 i2c_addr      <= aud_config_i2c_addr;
@@ -152,7 +154,6 @@ begin
                 i2c_data_rd   <= i2c_data_rd_o;
                 i2c_busy      <= i2c_busy_o;
                 i2c_ack_error <= i2c_ack_error_o;
-
             when others =>
         end case;
     end process i2c_mux;
@@ -166,21 +167,17 @@ begin
             else
 
                 case state is
-
                     when init =>
                         state          <= aud_codec_config;
                         ena_aud_config <= '0';
-
                     when aud_codec_config =>
                         ena_aud_config <= '1';
                         if (ena_aud_config = '1' and busy_aud_config = '0') then
                             state <= active;
                         end if;
-
                     when active =>
                         ena_aud_config <= '0';
                         state          <= active;
-
                     when others =>
                         ena_aud_config <= '0';
                         state          <= init;
@@ -191,8 +188,8 @@ begin
 
     i2c_master_inst : component i2c_master
         generic map (
-            g_input_clk_hz => G_INPUT_CLK,
-            g_bus_clk_hz   => G_AUD_CLK
+            G_INPUT_CLK_HZ => G_INPUT_CLK_HZ,
+            G_BUS_CLK_HZ   => 400_000
         )
         port map (
             clk_i       => clk,

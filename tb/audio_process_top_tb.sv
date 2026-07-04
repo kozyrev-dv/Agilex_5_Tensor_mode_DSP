@@ -4,8 +4,9 @@
 
 module audio_process_top_tb();
     // --- Parameter Definitions ---
-    parameter int G_INPUT_CLK = 50_000_000;
-    parameter int G_AUD_CLK   = 12_288_000;
+    parameter int G_INPUT_CLK_HZ = 50_000_000;
+    parameter int G_AUD_CLK_HZ   = 12_288_000;
+    parameter int G_AUD_CONFIG_DELAY_US = 10;
 
     // --- Testbench Signals ---
     logic clk = 0;
@@ -41,8 +42,9 @@ module audio_process_top_tb();
     // --- Device Under Test (DUT) Instantiation ---
     // Connects directly to the VHDL design (mixed-language simulation support)
     audio_process_top #(
-        .G_INPUT_CLK(G_INPUT_CLK),
-        .G_AUD_CLK(G_AUD_CLK)
+        .G_INPUT_CLK_HZ(G_INPUT_CLK_HZ),
+        .G_AUD_CLK_HZ(G_AUD_CLK_HZ),
+        .G_AUD_CONFIG_DELAY_US(G_AUD_CONFIG_DELAY_US)
     ) dut (
         .clk(clk),
         .clk_aud(clk_aud),
@@ -79,8 +81,8 @@ module audio_process_top_tb();
     initial begin
         // Display initial header configuration details
         $display("[%0t ns] Simulation started.", $time);
-        $display("System Clock: %0d Hz (Period: %0f ns)", G_INPUT_CLK, `CLK_PERIOD * 1e9);
-        $display("Audio Clock:  %0d Hz (Period: %0f ns)", G_AUD_CLK, `CLK_AUD_PERIOD * 1e9);
+        $display("System Clock: %0d Hz (Period: %0f ns)", G_INPUT_CLK_HZ, `CLK_PERIOD);
+        $display("Audio Clock:  %0d Hz (Period: %0f ns)", G_AUD_CLK_HZ, `CLK_AUD_PERIOD);
         
         // 1. Initial State: Hold module in Hard Reset
         reset_n = 1'b0;
