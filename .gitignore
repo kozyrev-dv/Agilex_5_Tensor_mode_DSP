@@ -20,3 +20,5 @@ tb/sim/*
 !tb/sim/*.do
 
 *.yaml
+
+transcript
