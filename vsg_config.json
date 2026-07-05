@@ -148,6 +148,9 @@
     },
     "signal_007" : {
       "disable" : true
+    },
+    "whitespace_001" : {
+        "disable" : true
     }
   }
   
