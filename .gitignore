@@ -20,5 +20,6 @@ tb/sim/*
 !tb/sim/*.do
 
 *.yaml
+*.out
 
 transcript
