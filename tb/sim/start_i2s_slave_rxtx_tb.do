@@ -1,0 +1,13 @@
+if {[file exists work]} {
+    vdel -lib work -all
+}
+
+vlib work
+do compile_i2s_slave_rxtx.do
+vlog -work work -sv ../models/i2s_master_tx_model.sv
+vlog -work work -sv ../models/i2s_master_rx_model.sv
+vlog -work work -sv ../i2s_slave_rxtx_tb.sv
+vsim -voptargs="+acc" work.i2s_slave_rxtx_tb
+
+do wave_i2s_slave_rxtx_tb.do
+run -all

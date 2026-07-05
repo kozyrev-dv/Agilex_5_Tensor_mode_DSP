@@ -6,7 +6,7 @@ entity i2s_slave_rxtx is
     generic (
         G_INPUT_CLK_HZ  : integer := 50_000_000;
         G_DATA_WIDTH_RX : integer := 8;
-        G_DATA_WIDTH_TX : integer := G_DATA_WIDTH_RX
+        G_DATA_WIDTH_TX : integer := 8
     );
     port (
         clk_i     : in    std_logic;
