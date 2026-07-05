@@ -5,9 +5,13 @@ library ieee;
 
 entity audio_process_top is
     generic (
-        G_INPUT_CLK_HZ        : integer := 50_000_000;
+        G_INPUT_CLK_HZ : integer := 50_000_000;
+        -- SSM2603 configutation
         G_AUD_CLK_HZ          : integer := 12_228_000;
-        G_AUD_CONFIG_DELAY_US : integer := 10
+        G_AUD_CONFIG_DELAY_US : integer := 10;
+        G_AUD_I2S_DATA_WIDTH  : integer := 24;
+        -- DSP processing
+        G_DSP_DATA_WIDTH : integer := 8
     );
     port (
         clk     : in    std_logic;
@@ -19,12 +23,12 @@ entity audio_process_top is
         fpga_i2c_sda : inout std_logic;
 
         -- Audio CODEC Interface (FPGA is Master)
-        aud_xck     : out   std_logic;
-        aud_bclk    : in   std_logic;
+        aud_xck     : out   std_logic; -- 12.288 MHz chip clock to SSM2603 MCLK pin
+        aud_bclk    : in    std_logic;
         aud_adclrck : out   std_logic;
         aud_adcdat  : in    std_logic; -- recording data
         aud_daclrck : out   std_logic;
-        aud_dacdat  : out   std_logic -- playback data
+        aud_dacdat  : out   std_logic  -- playback data
     );
 end entity audio_process_top;
 
@@ -70,6 +74,29 @@ architecture rtl of audio_process_top is
         );
     end component i2c_master;
 
+    component i2s_slave_rxtx is
+        generic (
+            G_INPUT_CLK_HZ  : integer := 50_000_000;
+            G_DATA_WIDTH_RX : integer;
+            G_DATA_WIDTH_TX : integer
+        );
+        port (
+            clk_i          : in    std_logic;
+            reset_n_i      : in    std_logic;
+            i2s_bclk_i     : in    std_logic;
+            i2s_lrc_rx_i   : in    std_logic;
+            i2s_dat_rx_i   : in    std_logic;
+            i2s_lrc_tx_o   : in    std_logic;
+            i2s_dat_tx_o   : out   std_logic;
+            dat_rx_o       : out   std_logic_vector(G_DATA_WIDTH_RX - 1 downto 0);
+            dat_rx_lr_o    : out   std_logic;
+            dat_rx_ready   : out   std_logic;
+            dat_tx_i       : in    std_logic_vector(G_DATA_WIDTH_TX - 1 downto 0);
+            dat_tx_lr_i    : in    std_logic;
+            dat_tx_valid_i : in    std_logic
+        );
+    end component i2s_slave_rxtx;
+
     signal reset_hard_n : std_logic;
 
     -- Audio CODEC signals
@@ -89,14 +116,22 @@ architecture rtl of audio_process_top is
     signal i2c_busy      : std_logic;
     signal i2c_ack_error : std_logic;
 
-    signal i2c_data_rd_o   : std_logic_vector(7 downto 0) := (others => '0');
-    signal i2c_busy_o      : std_logic;
-    signal i2c_ack_error_o : std_logic;
+    signal i2c_data_rd_out   : std_logic_vector(7 downto 0) := (others => '0');
+    signal i2c_busy_out      : std_logic;
+    signal i2c_ack_error_out : std_logic;
 
     -- codec config FSM States
 
     type   state_type is (init, aud_codec_config, active);
     signal state : state_type := init;
+
+    -- DSP buffering signals
+    signal dat_rx_out       : std_logic_vector(G_AUD_I2S_DATA_WIDTH - 1 downto 0);
+    signal dat_rx_lr_out    : std_logic;
+    signal dat_rx_ready_out : std_logic;
+    signal dat_tx_in        : std_logic_vector(G_AUD_I2S_DATA_WIDTH - 1 downto 0);
+    signal dat_tx_lr_in     : std_logic;
+    signal dat_tx_valid_in  : std_logic;
 begin
 
     -------------------------------------------------------------------
@@ -107,7 +142,28 @@ begin
     -------------------------------------------------------------------
     -- 2. DIGITAL AUDIO LOOPBACK
     -------------------------------------------------------------------
-    aud_dacdat <= aud_adcdat; -- given every
+
+    i2s_slave_rxtx_inst : component i2s_slave_rxtx
+        generic map (
+            G_INPUT_CLK_HZ  => G_INPUT_CLK_HZ,
+            G_DATA_WIDTH_RX => 24,
+            G_DATA_WIDTH_TX => 24
+        )
+        port map (
+            clk_i          => clk,
+            reset_n_i      => reset_hard_n,
+            i2s_bclk_i     => aud_bclk,
+            i2s_lrc_rx_i   => aud_adclrck,
+            i2s_dat_rx_i   => aud_adcdat,
+            i2s_lrc_tx_o   => aud_daclrck,
+            i2s_dat_tx_o   => aud_dacdat,
+            dat_rx_o       => dat_rx_out,
+            dat_rx_lr_o    => dat_rx_lr_out,
+            dat_rx_ready   => dat_rx_ready_out,
+            dat_tx_i       => dat_tx_in,
+            dat_tx_lr_i    => dat_tx_lr_in,
+            dat_tx_valid_i => dat_tx_valid_in
+        );
 
     -------------------------------------------------------------------
     -- 3. AUD CODEC CONFIGURATION CONTROLLER
@@ -151,9 +207,9 @@ begin
                 i2c_addr      <= aud_config_i2c_addr;
                 i2c_rw        <= aud_config_i2c_rw;
                 i2c_data_wr   <= aud_config_i2c_data_wr;
-                i2c_data_rd   <= i2c_data_rd_o;
-                i2c_busy      <= i2c_busy_o;
-                i2c_ack_error <= i2c_ack_error_o;
+                i2c_data_rd   <= i2c_data_rd_out;
+                i2c_busy      <= i2c_busy_out;
+                i2c_ack_error <= i2c_ack_error_out;
             when others =>
         end case;
     end process i2c_mux;
@@ -198,9 +254,9 @@ begin
             addr_i      => i2c_addr,
             rw_i        => i2c_rw,
             data_wr_i   => i2c_data_wr,
-            busy_o      => i2c_busy_o,
-            data_rd_o   => i2c_data_rd_o,
-            ack_error_o => i2c_ack_error_o,
+            busy_o      => i2c_busy_out,
+            data_rd_o   => i2c_data_rd_out,
+            ack_error_o => i2c_ack_error_out,
             sda_io      => fpga_i2c_sda,
             scl_io      => fpga_i2c_scl
         );
