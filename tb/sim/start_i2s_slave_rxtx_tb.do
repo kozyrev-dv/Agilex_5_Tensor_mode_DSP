@@ -1,3 +1,5 @@
+quit -sim
+
 if {[file exists work]} {
     vdel -lib work -all
 }
