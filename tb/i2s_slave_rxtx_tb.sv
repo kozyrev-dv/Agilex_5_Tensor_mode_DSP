@@ -3,8 +3,8 @@
 module i2s_slave_rxtx_tb();
     localparam integer CLK_FREQ_HZ = 50_000_000;
     localparam integer MCLK_FREQ_HZ = 12_288_000;
-    localparam integer RECDATA_WIDTH = 24;
-    localparam integer PBDATA_WIDTH = 24;
+    localparam integer RECDATA_WIDTH = 32;
+    localparam integer PBDATA_WIDTH = 32;
 
     specparam CLK_PERIOD  = 1_000_000_000 / CLK_FREQ_HZ; 
     specparam MCLK_PERIOD = 1_000_000_000 / MCLK_FREQ_HZ;
