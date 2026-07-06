@@ -3,8 +3,8 @@
 module i2s_slave_rxtx_tb();
     localparam integer CLK_FREQ_HZ = 50_000_000;
     localparam integer MCLK_FREQ_HZ = 12_288_000;
-    localparam integer RECDATA_WIDTH = 32;
-    localparam integer PBDATA_WIDTH = 32;
+    localparam integer RECDATA_WIDTH = 16;
+    localparam integer PBDATA_WIDTH = 16;
 
     specparam CLK_PERIOD  = 1_000_000_000 / CLK_FREQ_HZ; 
     specparam MCLK_PERIOD = 1_000_000_000 / MCLK_FREQ_HZ;
@@ -22,10 +22,15 @@ module i2s_slave_rxtx_tb();
 
     bit i2s_bclk_rx_in;
     bit i2s_pbdat_rx_in;
-    bit i2s_pblr_rx_in;
-    bit [PBDATA_WIDTH - 1 : 0] dat_tx_in;
-    bit dat_tx_lr_in;
+    bit i2s_pblr_rx_out;
+    logic [PBDATA_WIDTH - 1 : 0] dat_tx_in;
+    logic [PBDATA_WIDTH - 1 : 0] dat_tx_in_queue [$];
+    logic dat_tx_lr_in;
+    logic dat_tx_lr_in_queue [$];
     bit dat_tx_valid_in;
+    bit dat_tx_busy_o;
+
+    assign i2s_pblr_rx_out = i2s_reclr_tx_out;
 
     i2s_master_tx_model # (
         .MCLK_FREQ_HZ(MCLK_FREQ_HZ),
@@ -50,15 +55,38 @@ module i2s_slave_rxtx_tb();
         .i2s_bclk_i(i2s_bclk_tx_out),
         .i2s_lrc_rx_i(i2s_reclr_tx_out),
         .i2s_dat_rx_i(i2s_recdat_tx_out),
-        .i2s_lrc_tx_o(i2s_pblr_rx_in),
+        .i2s_lrc_tx_i(i2s_pblr_rx_out),
         .i2s_dat_tx_o(i2s_pbdat_rx_in),
         .dat_rx_o(dat_rx_out),
         .dat_rx_lr_o(dat_rx_lr_out),
         .dat_rx_valid_o(dat_rx_valid_out),
         .dat_tx_i(dat_tx_in),
         .dat_tx_lr_i(dat_tx_lr_in),
-        .dat_tx_valid_i(dat_tx_valid_in)
+        .dat_tx_valid_i(dat_tx_valid_in),
+        .dat_tx_busy_o(dat_tx_busy_o)
     );
+    always @(posedge(clk_i)) begin
+        if (reset_n_i == '0) begin
+            dat_tx_in_queue = {};
+            dat_tx_lr_in_queue = {};
+        end else if (dat_rx_valid_out == '1) begin
+            dat_tx_in_queue.push_back(dat_rx_out);
+            dat_tx_lr_in_queue.push_back(dat_rx_lr_out);
+        end
+    end
+
+    // loopback rx -> tx
+    always @(posedge(clk_i)) begin
+        dat_tx_valid_in <= '0;
+        dat_tx_in <= 'x;    // for sim purposes
+        dat_tx_lr_in <= 'x; // for sim purposes
+        if (dat_tx_busy_o == '0 && dat_tx_in_queue.size() != 0) begin
+            dat_tx_valid_in <= '1;
+            dat_tx_in <= dat_tx_in_queue.pop_front();
+            dat_tx_lr_in <= dat_tx_lr_in_queue.pop_front();
+        end
+    end
+    //
 
     initial begin
         mclk_i = '0;
@@ -74,11 +102,11 @@ module i2s_slave_rxtx_tb();
     end
 
     initial begin
-        #(MCLK_PERIOD * 160);
+        #(MCLK_PERIOD * 460);
         reset_n_i = '0;
         #(MCLK_PERIOD * 50);
         reset_n_i = '1;
-        #(MCLK_PERIOD * 100_0);
+        #(MCLK_PERIOD * 700);
         $stop;
     end
 
