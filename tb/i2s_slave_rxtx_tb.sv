@@ -18,7 +18,7 @@ module i2s_slave_rxtx_tb();
     bit i2s_reclr_tx_out;
     bit [RECDATA_WIDTH - 1 : 0] dat_rx_out;
     bit dat_rx_lr_out;
-    bit dat_rx_ready_out;
+    bit dat_rx_valid_out;
 
     bit i2s_bclk_rx_in;
     bit i2s_pbdat_rx_in;
@@ -54,7 +54,7 @@ module i2s_slave_rxtx_tb();
         .i2s_dat_tx_o(i2s_pbdat_rx_in),
         .dat_rx_o(dat_rx_out),
         .dat_rx_lr_o(dat_rx_lr_out),
-        .dat_rx_ready(dat_rx_ready_out),
+        .dat_rx_valid_o(dat_rx_valid_out),
         .dat_tx_i(dat_tx_in),
         .dat_tx_lr_i(dat_tx_lr_in),
         .dat_tx_valid_i(dat_tx_valid_in)
@@ -78,7 +78,7 @@ module i2s_slave_rxtx_tb();
         reset_n_i = '0;
         #(MCLK_PERIOD * 50);
         reset_n_i = '1;
-        #(MCLK_PERIOD * 100_000);
+        #(MCLK_PERIOD * 100_0);
         $stop;
     end
 

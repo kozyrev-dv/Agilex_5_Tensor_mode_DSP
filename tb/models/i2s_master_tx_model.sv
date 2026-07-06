@@ -20,6 +20,7 @@ module i2s_master_tx_model #(
     assign is_running = reset_n_i;
 
     task send_data(input bit [31:0] val);
+    reclr_o = ~reclr_o;
         for (integer pointer = 31; pointer >= 0; pointer--) begin
             if (is_running) begin
                 recdat_o = val[pointer];
@@ -36,11 +37,6 @@ module i2s_master_tx_model #(
             forever begin : bclk_gen
                 if (is_running) begin
                     #(BCLK_PERIOD_NS / 2) bclk_o = ~bclk_o;
-                end
-            end
-            forever begin : reclr_gen
-                if (is_running) begin
-                    #(RECLR_PERIOD_NS / 2) reclr_o = ~reclr_o;
                 end
             end
             forever begin

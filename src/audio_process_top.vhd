@@ -90,7 +90,7 @@ architecture rtl of audio_process_top is
             i2s_dat_tx_o   : out   std_logic;
             dat_rx_o       : out   std_logic_vector(G_DATA_WIDTH_RX - 1 downto 0);
             dat_rx_lr_o    : out   std_logic;
-            dat_rx_ready   : out   std_logic;
+            dat_rx_valid_o : out   std_logic;
             dat_tx_i       : in    std_logic_vector(G_DATA_WIDTH_TX - 1 downto 0);
             dat_tx_lr_i    : in    std_logic;
             dat_tx_valid_i : in    std_logic
@@ -128,7 +128,7 @@ architecture rtl of audio_process_top is
     -- DSP buffering signals
     signal dat_rx_out       : std_logic_vector(G_AUD_I2S_DATA_WIDTH - 1 downto 0);
     signal dat_rx_lr_out    : std_logic;
-    signal dat_rx_ready_out : std_logic;
+    signal dat_rx_valid_out : std_logic;
     signal dat_tx_in        : std_logic_vector(G_AUD_I2S_DATA_WIDTH - 1 downto 0);
     signal dat_tx_lr_in     : std_logic;
     signal dat_tx_valid_in  : std_logic;
@@ -159,7 +159,7 @@ begin
             i2s_dat_tx_o   => aud_dacdat,
             dat_rx_o       => dat_rx_out,
             dat_rx_lr_o    => dat_rx_lr_out,
-            dat_rx_ready   => dat_rx_ready_out,
+            dat_rx_valid_o => dat_rx_valid_out,
             dat_tx_i       => dat_tx_in,
             dat_tx_lr_i    => dat_tx_lr_in,
             dat_tx_valid_i => dat_tx_valid_in
