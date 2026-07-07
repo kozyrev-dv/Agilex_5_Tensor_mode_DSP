@@ -61,10 +61,10 @@ begin
     begin
         if (rising_edge(clk_i)) then
             if (reset_n_i = '0') then
-                lr_channel_start <= ('0', '0');
+                lr_channel_start <= (others => '0');
             else
-                lr_channel_start(0) <= '1' when lrc_prev = '1' and lrc_i = '0' else '0';
-                lr_channel_start(1) <= '1' when lrc_prev = '0' and lrc_i = '1' else '0';
+                lr_channel_start(0) <=     lrc_prev and not lrc_i;
+                lr_channel_start(1) <= not lrc_prev and     lrc_i;
             end if;
         end if;
     end process lrc_front_catch_p;
