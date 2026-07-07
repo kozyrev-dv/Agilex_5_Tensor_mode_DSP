@@ -31,18 +31,21 @@ add wave -noupdate -expand -group {Slave tx} /i2s_slave_rxtx_tb/i2s_slave_rxtx_i
 add wave -noupdate -expand -group {Slave tx} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_tx_valid_i
 add wave -noupdate -expand -group {Slave tx} -radix hexadecimal /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_tx_i
 add wave -noupdate -expand -group {Slave tx} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_tx_lr_i
-add wave -noupdate -expand -group {Slave tx} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_reg
-add wave -noupdate -expand -group {Slave tx} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_tx_busy_o
-add wave -noupdate -expand -group {Slave tx} -expand -group tx_left /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_o(0)
-add wave -noupdate -expand -group {Slave tx} -expand -group tx_left /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_reg(0)
-add wave -noupdate -expand -group {Slave tx} -expand -group tx_left /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_busy(0)
-add wave -noupdate -expand -group {Slave tx} -expand -group tx_right /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_o(1)
-add wave -noupdate -expand -group {Slave tx} -expand -group tx_right -radix binary /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_reg(1)
-add wave -noupdate -expand -group {Slave tx} -expand -group tx_right /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_busy(1)
+add wave -noupdate -expand -group {Slave tx} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_tx_empty_o
+add wave -noupdate -expand -group {Slave tx} -expand -group {tx left} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_o(0)
+add wave -noupdate -expand -group {Slave tx} -expand -group {tx left} -radix hexadecimal /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_reg(0)
+add wave -noupdate -expand -group {Slave tx} -expand -group {tx left} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/lr_transfering(0)
+add wave -noupdate -expand -group {Slave tx} -expand -group {tx left} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/cnt_lr(0)
+add wave -noupdate -expand -group {Slave tx} -expand -group {tx left} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_empty(0)
+add wave -noupdate -expand -group {Slave tx} -expand -group {tx right} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_o(1)
+add wave -noupdate -expand -group {Slave tx} -expand -group {tx right} -radix hexadecimal /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_reg(1)
+add wave -noupdate -expand -group {Slave tx} -expand -group {tx right} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/lr_transfering(1)
+add wave -noupdate -expand -group {Slave tx} -expand -group {tx right} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/cnt_lr(1)
+add wave -noupdate -expand -group {Slave tx} -expand -group {tx right} /i2s_slave_rxtx_tb/i2s_slave_rxtx_inst/i2s_slave_tx_inst/dat_lr_empty(1)
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {17118018 ns} 0}
+WaveRestoreCursors {{Cursor 1} {31026 ns} 0}
 quietly wave cursor active 1
-configure wave -namecolwidth 423
+configure wave -namecolwidth 454
 configure wave -valuecolwidth 82
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
@@ -56,4 +59,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {17116819 ns} {17126852 ns}
+WaveRestoreZoom {0 ns} {102911 ns}

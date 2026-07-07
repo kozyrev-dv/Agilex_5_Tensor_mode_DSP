@@ -22,10 +22,10 @@ entity i2s_slave_rxtx is
         dat_rx_lr_o    : out   std_logic;
         dat_rx_valid_o : out   std_logic;
 
-        dat_tx_i       : in    std_logic_vector(G_DATA_WIDTH_TX - 1 downto 0);
-        dat_tx_lr_i    : in    std_logic;
-        dat_tx_valid_i : in    std_logic;
-        dat_tx_busy_o  : out   std_logic
+        dat_tx_i        : in    std_logic_vector(G_DATA_WIDTH_TX - 1 downto 0);
+        dat_tx_lr_i     : in    std_logic;
+        dat_tx_valid_i  : in    std_logic;
+        dat_tx_empty_o  : out   std_logic
     );
 end entity i2s_slave_rxtx;
 
@@ -52,15 +52,15 @@ architecture rtl of i2s_slave_rxtx is
             G_DATA_WIDTH : integer
         );
         port (
-            clk_i          : in    std_logic;
-            reset_n_i      : in    std_logic;
-            bclk_i         : in    std_logic;
-            lrc_i          : in    std_logic;
-            dat_o          : out   std_logic;
-            dat_tx_i       : in    std_logic_vector(G_DATA_WIDTH - 1 downto 0);
-            dat_tx_lr_i    : in    std_logic;
-            dat_tx_valid_i : in    std_logic;
-            dat_tx_busy_o  : out   std_logic
+            clk_i           : in    std_logic;
+            reset_n_i       : in    std_logic;
+            bclk_i          : in    std_logic;
+            lrc_i           : in    std_logic;
+            dat_o           : out   std_logic;
+            dat_tx_i        : in    std_logic_vector(G_DATA_WIDTH - 1 downto 0);
+            dat_tx_lr_i     : in    std_logic;
+            dat_tx_valid_i  : in    std_logic;
+            dat_tx_empty_o  : out   std_logic
         );
     end component i2s_slave_tx;
 
@@ -94,7 +94,7 @@ begin
             dat_tx_i       => dat_tx_i,
             dat_tx_lr_i    => dat_tx_lr_i,
             dat_tx_valid_i => dat_tx_valid_i,
-            dat_tx_busy_o  => dat_tx_busy_o
+            dat_tx_empty_o => dat_tx_empty_o
         );
 
 end architecture rtl;
