@@ -31,7 +31,6 @@ architecture rtl of i2s_slave_tx is
     signal dat_lr_busy : lr_logic_t;
     signal cnt_lr      : lr_cnt_t;
 
-    signal 
     signal dat_reg : std_logic_vector(G_DATA_WIDTH - 1 downto 0);
     
     signal lrc_prev  : std_logic;
