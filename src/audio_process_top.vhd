@@ -25,9 +25,9 @@ entity audio_process_top is
         -- Audio CODEC Interface (FPGA is Master)
         aud_xck     : out   std_logic; -- 12.288 MHz chip clock to SSM2603 MCLK pin
         aud_bclk    : in    std_logic;
-        aud_adclrck : out   std_logic;
+        aud_adclrck : in    std_logic;
         aud_adcdat  : in    std_logic; -- recording data
-        aud_daclrck : out   std_logic;
+        aud_daclrck : in    std_logic;
         aud_dacdat  : out   std_logic  -- playback data
     );
 end entity audio_process_top;
@@ -81,19 +81,21 @@ architecture rtl of audio_process_top is
             G_DATA_WIDTH_TX : integer
         );
         port (
-            clk_i          : in    std_logic;
-            reset_n_i      : in    std_logic;
-            i2s_bclk_i     : in    std_logic;
-            i2s_lrc_rx_i   : in    std_logic;
-            i2s_dat_rx_i   : in    std_logic;
-            i2s_lrc_tx_o   : in    std_logic;
-            i2s_dat_tx_o   : out   std_logic;
-            dat_rx_o       : out   std_logic_vector(G_DATA_WIDTH_RX - 1 downto 0);
-            dat_rx_lr_o    : out   std_logic;
-            dat_rx_valid_o : out   std_logic;
-            dat_tx_i       : in    std_logic_vector(G_DATA_WIDTH_TX - 1 downto 0);
-            dat_tx_lr_i    : in    std_logic;
-            dat_tx_valid_i : in    std_logic
+            clk_i            : in    std_logic;
+            reset_n_i        : in    std_logic;
+            i2s_bclk_i       : in    std_logic;
+            i2s_lrc_rx_i     : in    std_logic;
+            i2s_dat_rx_i     : in    std_logic;
+            i2s_lrc_tx_i     : in    std_logic;
+            i2s_dat_tx_o     : out   std_logic;
+            dat_rx_o         : out   std_logic_vector(G_DATA_WIDTH_RX - 1 downto 0);
+            dat_rx_lr_o      : out   std_logic;
+            dat_rx_valid_o   : out   std_logic;
+            dat_tx_i         : in    std_logic_vector(G_DATA_WIDTH_TX - 1 downto 0);
+            dat_tx_lr_i      : in    std_logic;
+            dat_tx_valid_i   : in    std_logic;
+            dat_tx_l_empty_o : out   std_logic;
+            dat_tx_r_empty_o : out   std_logic
         );
     end component i2s_slave_rxtx;
 
@@ -126,12 +128,19 @@ architecture rtl of audio_process_top is
     signal state : state_type := init;
 
     -- DSP buffering signals
-    signal dat_rx_out       : std_logic_vector(G_AUD_I2S_DATA_WIDTH - 1 downto 0);
-    signal dat_rx_lr_out    : std_logic;
+    signal dat_rx_out       : std_logic_vector(G_AUD_I2S_DATA_WIDTH - 1 downto 0); -- parallel out data
+    signal dat_rx_lr_out    : std_logic;                                           -- parallel out channel designation
     signal dat_rx_valid_out : std_logic;
-    signal dat_tx_in        : std_logic_vector(G_AUD_I2S_DATA_WIDTH - 1 downto 0);
-    signal dat_tx_lr_in     : std_logic;
+    signal dat_tx_in        : std_logic_vector(G_AUD_I2S_DATA_WIDTH - 1 downto 0); -- parallel in  data
+    signal dat_tx_lr_in     : std_logic;                                           -- parallel in  channel designation
     signal dat_tx_valid_in  : std_logic;
+
+    signal dat_tx_l_empty_out : std_logic; -- if the tx ready to get  left-channel data
+    signal dat_tx_r_empty_out : std_logic; -- if the tx ready to get right-channel data
+
+    signal dat_rx_l_buf : std_logic_vector(G_AUD_I2S_DATA_WIDTH - 1 downto 0);
+    signal dat_rx_r_buf : std_logic_vector(G_AUD_I2S_DATA_WIDTH - 1 downto 0);
+
 begin
 
     -------------------------------------------------------------------
@@ -146,24 +155,46 @@ begin
     i2s_slave_rxtx_inst : component i2s_slave_rxtx
         generic map (
             G_INPUT_CLK_HZ  => G_INPUT_CLK_HZ,
-            G_DATA_WIDTH_RX => 24,
-            G_DATA_WIDTH_TX => 24
+            G_DATA_WIDTH_RX => G_AUD_I2S_DATA_WIDTH,
+            G_DATA_WIDTH_TX => G_AUD_I2S_DATA_WIDTH
         )
         port map (
-            clk_i          => clk,
-            reset_n_i      => reset_hard_n,
-            i2s_bclk_i     => aud_bclk,
-            i2s_lrc_rx_i   => aud_adclrck,
-            i2s_dat_rx_i   => aud_adcdat,
-            i2s_lrc_tx_o   => aud_daclrck,
-            i2s_dat_tx_o   => aud_dacdat,
-            dat_rx_o       => dat_rx_out,
-            dat_rx_lr_o    => dat_rx_lr_out,
-            dat_rx_valid_o => dat_rx_valid_out,
-            dat_tx_i       => dat_tx_in,
-            dat_tx_lr_i    => dat_tx_lr_in,
-            dat_tx_valid_i => dat_tx_valid_in
+            clk_i            => clk,
+            reset_n_i        => reset_hard_n,
+            i2s_bclk_i       => aud_bclk,
+            i2s_lrc_rx_i     => aud_adclrck,
+            i2s_dat_rx_i     => aud_adcdat,
+            i2s_lrc_tx_i     => aud_daclrck,
+            i2s_dat_tx_o     => aud_dacdat,
+            dat_rx_o         => dat_rx_out,
+            dat_rx_lr_o      => dat_rx_lr_out,
+            dat_rx_valid_o   => dat_rx_valid_out,
+            dat_tx_i         => dat_tx_in,
+            dat_tx_lr_i      => dat_tx_lr_in,
+            dat_tx_valid_i   => dat_tx_valid_in,
+            dat_tx_l_empty_o => dat_tx_l_empty_out,
+            dat_tx_r_empty_o => dat_tx_r_empty_out
         );
+
+
+    -- TODO: non-synthesisable loopback? Buffering and so on
+    rx_data_buffering_p : process (clk) is
+    begin
+        if rising_edge(clk) then
+            if (reset_hard_n = '0') then
+                dat_rx_l_buf <= (others => '0');
+                dat_rx_r_buf <= (others => '0');
+            else
+                if (dat_rx_valid_out = '1') then
+                    if (dat_rx_lr_out = '0') then
+                        dat_rx_l_buf <= dat_rx_out;
+                    else
+                        dat_rx_r_buf <= dat_rx_out;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process rx_data_buffering_p;
 
     -------------------------------------------------------------------
     -- 3. AUD CODEC CONFIGURATION CONTROLLER

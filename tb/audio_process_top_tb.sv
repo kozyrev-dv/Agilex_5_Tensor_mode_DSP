@@ -1,11 +1,12 @@
-`define CLK_PERIOD 1_000_000_000 / 50_000_000
-`define CLK_AUD_PERIOD 1_000_000_000 / 12_288_000
 `timescale 1ns/1ns
 
 module audio_process_top_tb();
     parameter int G_INPUT_CLK_HZ = 50_000_000;
     parameter int G_AUD_CLK_HZ   = 12_288_000;
     parameter int G_AUD_CONFIG_DELAY_US = 10;
+
+    specparam CLK_PERIOD = 1_000_000_000 / G_INPUT_CLK_HZ;
+    specparam CLK_AUD_PERIOD = 1_000_000_000 / G_AUD_CLK_HZ;
 
     logic clk = 0;
     logic clk_aud = 0;
@@ -19,9 +20,21 @@ module audio_process_top_tb();
     wire AUD_XCK;
     wire AUD_BCLK;
     wire AUD_ADCLRCK;
-    logic AUD_ADCDAT = 0;
+    logic AUD_ADCDAT;
     wire AUD_DACLRCK;
     wire AUD_DACDAT;
+
+    i2s_master_tx_model # (
+        .MCLK_FREQ_HZ(G_AUD_CLK_HZ),
+        .AUD_DATA_WIDTH(24)
+    )
+    i2s_master_tx_model_inst (
+        .mclk_i(clk_aud),
+        .reset_n_i(reset_n),
+        .bclk_o(AUD_BCLK),
+        .recdat_o(AUD_ADCDAT),
+        .reclr_o(AUD_ADCLRCK)
+    );
 
     i2c_slave_model #(
         .SLAVE_ADDR(7'h36) // Set to match your Codec Address
@@ -51,31 +64,22 @@ module audio_process_top_tb();
         .AUD_DACDAT(AUD_DACDAT)
     );
 
-    always #(`CLK_PERIOD / 2.0) clk = ~clk;
-    always #(`CLK_AUD_PERIOD / 2.0) clk_aud = ~clk_aud;
-
-    always @(posedge AUD_BCLK) begin
-        if (!reset_n) begin
-            AUD_ADCDAT <= 1'b0;
-        end else begin
-            AUD_ADCDAT <= $random;
-        end
-    end
+    always #(CLK_PERIOD / 2.0) clk = ~clk;
+    always #(CLK_AUD_PERIOD / 2.0) clk_aud = ~clk_aud;
 
     initial begin
         $display("[%0t ns] Simulation started.", $time);
-        $display("System Clock: %0d Hz (Period: %0f ns)", G_INPUT_CLK_HZ, `CLK_PERIOD);
-        $display("Audio Clock:  %0d Hz (Period: %0f ns)", G_AUD_CLK_HZ, `CLK_AUD_PERIOD);
+        $display("System Clock: %0d Hz (Period: %0f ns)", G_INPUT_CLK_HZ, CLK_PERIOD);
+        $display("Audio Clock:  %0d Hz (Period: %0f ns)", G_AUD_CLK_HZ, CLK_AUD_PERIOD);
 
         reset_n = 1'b0;
-        #(`CLK_PERIOD * 10);
+        #(CLK_PERIOD * 10);
 
         $display("[%0t ns] Releasing Reset. Initializing Codec configuration via I2C...", $time);
         reset_n = 1'b1;
 
-        #(`CLK_PERIOD * 100_000);
+        #(CLK_PERIOD * 100_000);
 
-        
         $display("[%0t ns] Simulation execution completed", $time);
         $stop;
     end
@@ -85,6 +89,5 @@ module audio_process_top_tb();
         #(10_000_000);
         $stop;
     end
-    
 
 endmodule
